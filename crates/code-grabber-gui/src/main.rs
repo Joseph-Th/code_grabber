@@ -1,11 +1,11 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use code_grabber_core::{
-    BundleMode, GenerationResult, ScanConfig, ScanConfigBuilder, generate_bundle,
-    init_project_profile, load_config, write_bundle_file,
+    BundleMode, GenerationResult, ScanConfig, generate_bundle, init_project_profile, load_config,
+    write_bundle_file,
 };
 use eframe::egui::{
     self, Align, Button, CentralPanel, Color32, ComboBox, Context, CornerRadius, FontId, Frame,
@@ -170,7 +170,7 @@ impl CodeGrabberApp {
                         }
                     }
                     Ok(JobPayload::ProfileInitialized(path)) => {
-                        self.status = format!("Profile initialized at {}.", path.display());
+                        self.status = format!("Profile initialized at {}.", display_path(&path));
                         self.last_profile_path = Some(path);
                     }
                     Err(err) => {
@@ -216,11 +216,7 @@ impl CodeGrabberApp {
             Some(PathBuf::from(self.output_path.trim()))
         };
 
-        let mut config = load_config(&root).or_else(|_| {
-            ScanConfigBuilder::new(&root)
-                .build()
-                .map_err(|err| err.to_string())
-        })?;
+        let mut config = load_config(&root).map_err(|err| err.to_string())?;
 
         config.mode = self.mode;
         config.token_budget = budget;
@@ -593,7 +589,7 @@ fn render_summary(
             if let Some(run) = run {
                 ui.horizontal_wrapped(|ui| {
                     ui.label(
-                        RichText::new(run.root.display().to_string())
+                        RichText::new(display_path(&run.root))
                             .strong()
                             .color(Color32::from_rgb(15, 23, 42)),
                     );
@@ -911,6 +907,17 @@ fn preview_text(contents: &str) -> String {
             &contents[..cutoff],
             cutoff
         )
+    }
+}
+
+fn display_path(path: &Path) -> String {
+    let raw = path.display().to_string();
+    if let Some(rest) = raw.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{rest}")
+    } else if let Some(rest) = raw.strip_prefix(r"\\?\") {
+        rest.to_string()
+    } else {
+        raw
     }
 }
 

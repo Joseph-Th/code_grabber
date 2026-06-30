@@ -28,6 +28,14 @@ pub fn sanitize_content(
         }
     }
 
+    if config.strip_rules.debug_assertion_cfg && candidate.extension.as_deref() == Some("rs") {
+        let stripped = strip_rust_debug_assertion_blocks(&output);
+        if stripped != output {
+            transformations.push("stripped rust debug assertion cfg blocks".to_string());
+            output = stripped;
+        }
+    }
+
     if config.strip_rules.blank_lines {
         let collapsed = collapse_blank_lines(&output);
         if collapsed != output {
@@ -130,6 +138,34 @@ fn strip_rust_test_blocks(content: &str) -> String {
     output.join("\n")
 }
 
+fn strip_rust_debug_assertion_blocks(content: &str) -> String {
+    let lines: Vec<&str> = content.lines().collect();
+    let mut output = Vec::with_capacity(lines.len());
+    let mut i = 0;
+
+    while i < lines.len() {
+        let trimmed = lines[i].trim_start();
+        if is_rust_debug_assertion_attr(trimmed) {
+            let start = i;
+            i += 1;
+            while i < lines.len() && lines[i].trim_start().starts_with("#[") {
+                i += 1;
+            }
+            if i < lines.len() && is_rust_item_start(lines[i].trim_start()) {
+                i = skip_rust_item(&lines, i);
+                continue;
+            }
+            output.extend_from_slice(&lines[start..i]);
+            continue;
+        }
+
+        output.push(lines[i]);
+        i += 1;
+    }
+
+    output.join("\n")
+}
+
 fn is_rust_test_attr(trimmed: &str) -> bool {
     trimmed.starts_with("#[test")
         || trimmed.starts_with("#[tokio::test")
@@ -138,10 +174,25 @@ fn is_rust_test_attr(trimmed: &str) -> bool {
         || trimmed.starts_with("#[cfg(test")
 }
 
+fn is_rust_debug_assertion_attr(trimmed: &str) -> bool {
+    trimmed.starts_with("#[cfg(debug_assertions")
+}
+
+fn is_rust_item_start(trimmed: &str) -> bool {
+    trimmed.contains("fn ")
+        || trimmed.contains("mod ")
+        || trimmed.contains("struct ")
+        || trimmed.contains("enum ")
+        || trimmed.contains("impl ")
+        || trimmed.contains("const ")
+        || trimmed.contains("static ")
+}
+
 fn skip_rust_item(lines: &[&str], mut i: usize) -> usize {
     let mut brace_depth = 0_i32;
     let mut saw_open = false;
     while i < lines.len() {
+        let trimmed = lines[i].trim_end();
         for ch in lines[i].chars() {
             match ch {
                 '{' => {
@@ -153,6 +204,9 @@ fn skip_rust_item(lines: &[&str], mut i: usize) -> usize {
             }
         }
         i += 1;
+        if !saw_open && trimmed.ends_with(';') {
+            break;
+        }
         if saw_open && brace_depth <= 0 {
             break;
         }

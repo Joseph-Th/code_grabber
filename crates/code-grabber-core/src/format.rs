@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::fmt::Write;
+use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::config::{OutputFormat, ScanConfig};
@@ -37,7 +38,7 @@ fn format_plain(config: &ScanConfig, files: &[ExtractedFile], report: &BundleRep
 
     writeln!(out, "# CODEBASE BUNDLE v1").ok();
     writeln!(out, "project: {project}").ok();
-    writeln!(out, "root: {}", config.root.display()).ok();
+    writeln!(out, "root: {}", display_path(&config.root)).ok();
     writeln!(out, "generated_unix: {}", now_unix()).ok();
     writeln!(out, "mode: {:?}", config.mode).ok();
     writeln!(out, "tokenizer: {}", config.tokenizer).ok();
@@ -109,6 +110,17 @@ fn now_unix() -> u64 {
 
 fn escape_attr(value: &str) -> String {
     value.replace('"', "&quot;")
+}
+
+fn display_path(path: &Path) -> String {
+    let raw = path.display().to_string();
+    if let Some(rest) = raw.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{rest}")
+    } else if let Some(rest) = raw.strip_prefix(r"\\?\") {
+        rest.to_string()
+    } else {
+        raw
+    }
 }
 
 fn repository_map(report: &BundleReport) -> String {

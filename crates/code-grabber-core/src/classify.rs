@@ -80,6 +80,12 @@ pub fn classify_candidate(
 
     let kind = classify_text(candidate);
     match kind {
+        FileKind::Manifest if !config.include_rules.manifests => {
+            Ok(excluded(kind, language, "manifests disabled"))
+        }
+        FileKind::Config if !config.include_rules.configs => {
+            Ok(excluded(kind, language, "configs disabled"))
+        }
         FileKind::Documentation if !config.include_rules.docs => {
             reasons.push("docs disabled in current mode".to_string());
             Ok(FileClassification {
@@ -92,6 +98,12 @@ pub fn classify_candidate(
         }
         FileKind::UnknownText if !config.include_rules.unknown_text_files => {
             Ok(excluded(kind, language, "unknown text files disabled"))
+        }
+        FileKind::Code if is_script(candidate) && !config.include_rules.scripts => {
+            Ok(excluded(kind, language, "scripts disabled"))
+        }
+        FileKind::Code if is_frontend(candidate) && !config.include_rules.frontend => {
+            Ok(excluded(kind, language, "frontend files disabled"))
         }
         _ => Ok(FileClassification {
             priority: priority_for(candidate, &kind),
@@ -250,6 +262,34 @@ fn classify_text(candidate: &FileCandidate) -> FileKind {
         Some("json" | "yaml" | "yml" | "toml" | "ini" | "xml") => FileKind::Config,
         _ => FileKind::UnknownText,
     }
+}
+
+fn is_frontend(candidate: &FileCandidate) -> bool {
+    matches!(
+        candidate.extension.as_deref(),
+        Some(
+            "ts" | "tsx"
+                | "js"
+                | "jsx"
+                | "mjs"
+                | "cjs"
+                | "vue"
+                | "svelte"
+                | "astro"
+                | "html"
+                | "css"
+                | "scss"
+                | "sass"
+                | "less"
+        )
+    )
+}
+
+fn is_script(candidate: &FileCandidate) -> bool {
+    matches!(
+        candidate.extension.as_deref(),
+        Some("sh" | "bash" | "ps1" | "bat" | "cmd")
+    )
 }
 
 fn is_config_name(name: &str) -> bool {

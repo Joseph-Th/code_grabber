@@ -43,3 +43,52 @@ fn removes_me() {
             .any(|item| item == "stripped rust inline tests")
     );
 }
+
+#[test]
+fn strips_rust_debug_assertion_cfg_items() {
+    let config = ScanConfig::default();
+    let classification = FileClassification {
+        kind: FileKind::Code,
+        language: Some("rust".to_string()),
+        include: true,
+        priority: 70,
+        reasons: vec![],
+    };
+    let candidate = FileCandidate {
+        abs_path: PathBuf::from("src/lib.rs"),
+        rel_path: "src/lib.rs".to_string(),
+        size_bytes: 0,
+        extension: Some("rs".to_string()),
+        file_name: "lib.rs".to_string(),
+        hidden: false,
+    };
+    let input = r#"
+pub fn keep() -> bool {
+    true
+}
+
+#[cfg(debug_assertions)]
+fn debug_only() -> bool {
+    false
+}
+
+#[cfg(debug_assertions)]
+const DEBUG_ONLY: bool = true;
+
+pub fn also_keep() -> bool {
+    true
+}
+"#;
+
+    let (output, transformations) = sanitize_content(&config, input, &classification, &candidate);
+
+    assert!(output.contains("pub fn keep()"));
+    assert!(output.contains("pub fn also_keep()"));
+    assert!(!output.contains("fn debug_only()"));
+    assert!(!output.contains("DEBUG_ONLY"));
+    assert!(
+        transformations
+            .iter()
+            .any(|item| item == "stripped rust debug assertion cfg blocks")
+    );
+}

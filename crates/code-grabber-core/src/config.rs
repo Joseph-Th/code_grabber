@@ -5,21 +5,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::Result;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BundleMode {
     Complete,
+    #[default]
     Core,
     Compact,
     Map,
     Diff,
     Pinned,
-}
-
-impl Default for BundleMode {
-    fn default() -> Self {
-        Self::Core
-    }
 }
 
 impl std::str::FromStr for BundleMode {
@@ -38,20 +33,16 @@ impl std::str::FromStr for BundleMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OutputFormat {
+    #[default]
     PlainDelimited,
     Markdown,
 }
 
-impl Default for OutputFormat {
-    fn default() -> Self {
-        Self::PlainDelimited
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct IncludeRules {
     pub unknown_text_files: bool,
     pub manifests: bool,
@@ -81,6 +72,7 @@ impl Default for IncludeRules {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ExcludeRules {
     pub dirs: Vec<String>,
     pub globs: Vec<String>,
@@ -169,6 +161,7 @@ impl Default for ExcludeRules {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct StripRules {
     pub rust_inline_tests: bool,
     pub debug_assertion_cfg: bool,
@@ -188,6 +181,7 @@ impl Default for StripRules {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct OutputConfig {
     pub output_dir: PathBuf,
     pub output_filename: String,
@@ -209,6 +203,7 @@ impl Default for OutputConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ScanConfig {
     pub root: PathBuf,
     pub mode: BundleMode,

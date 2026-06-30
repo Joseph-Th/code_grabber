@@ -1,11 +1,10 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
 use code_grabber_core::{
-    BundleMode, ScanConfig, ScanConfigBuilder, generate_bundle, init_project_profile, load_config,
-    write_bundle_file,
+    BundleMode, ScanConfig, generate_bundle, init_project_profile, load_config, write_bundle_file,
 };
 
 #[derive(Debug, Parser)]
@@ -89,8 +88,8 @@ fn main() -> Result<()> {
         Command::Init { root } => {
             init_project_profile(&root).context("failed to initialize .codebundle.toml")?;
             print_section("Profile initialized");
-            println!("  path  {}", root.join(".codebundle.toml").display());
-            println!("  next  cg inspect {}", root.display());
+            println!("  path  {}", display_path(&root.join(".codebundle.toml")));
+            println!("  next  cg inspect {}", display_path(&root));
             Ok(())
         }
     }
@@ -99,7 +98,7 @@ fn main() -> Result<()> {
 fn run_bundle(args: BundleArgs) -> Result<()> {
     let config = build_config(&args)?;
     print_section("Scanning repository");
-    println!("  root  {}", config.root.display());
+    println!("  root  {}", display_path(&config.root));
     println!("  mode  {}", mode_label(config.mode));
     let result = generate_bundle(&config).context("failed to generate bundle")?;
     print_summary(&config, &result.report, SummaryIntent::Bundle);
@@ -109,7 +108,7 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
         write_bundle_file(&output_path, &result.output.contents)
             .context("failed to write bundle")?;
         print_section("Output");
-        println!("  wrote  {}", output_path.display());
+        println!("  wrote  {}", display_path(&output_path));
         println!("  size   {}", format_bytes(result.output.contents.len()));
     } else if args.dry_run {
         print_section("Output");
@@ -132,7 +131,7 @@ fn run_inspect(args: BundleArgs) -> Result<()> {
     args.dry_run = true;
     let config = build_config(&args)?;
     print_section("Inspecting repository");
-    println!("  root  {}", config.root.display());
+    println!("  root  {}", display_path(&config.root));
     println!("  mode  {}", mode_label(config.mode));
     let result = generate_bundle(&config).context("failed to inspect repository")?;
     print_summary(&config, &result.report, SummaryIntent::Inspect);
@@ -152,11 +151,7 @@ fn build_config(args: &BundleArgs) -> Result<ScanConfig> {
         .root
         .canonicalize()
         .context("invalid repository root")?;
-    let mut config = load_config(&root).unwrap_or_else(|_| {
-        ScanConfigBuilder::new(&root)
-            .build()
-            .expect("default scan config should build")
-    });
+    let mut config = load_config(&root).context("failed to load repository profile")?;
 
     config.mode = args.mode;
     if args.budget.is_some() {
@@ -307,6 +302,17 @@ fn print_section(title: &str) {
     println!();
     println!("{title}");
     println!("{}", "-".repeat(title.len()));
+}
+
+fn display_path(path: &Path) -> String {
+    let raw = path.display().to_string();
+    if let Some(rest) = raw.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{rest}")
+    } else if let Some(rest) = raw.strip_prefix(r"\\?\") {
+        rest.to_string()
+    } else {
+        raw
+    }
 }
 
 fn mode_label(mode: BundleMode) -> &'static str {
