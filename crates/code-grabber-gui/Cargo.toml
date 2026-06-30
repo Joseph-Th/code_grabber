@@ -1,0 +1,12 @@
+[package]
+name = "code-grabber-gui"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+arboard.workspace = true
+code-grabber-core = { path = "../code-grabber-core" }
+dirs.workspace = true
+eframe.workspace = true
+rfd.workspace = true

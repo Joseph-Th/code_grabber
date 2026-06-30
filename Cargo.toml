@@ -1,0 +1,27 @@
+[workspace]
+members = [
+    "crates/code-grabber-core",
+    "crates/code-grabber-cli",
+    "crates/code-grabber-gui",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+version = "0.1.0"
+
+[workspace.dependencies]
+anyhow = "1"
+arboard = "3"
+clap = { version = "4", features = ["derive"] }
+dirs = "6"
+eframe = "0.35"
+globset = "0.4"
+ignore = "0.4"
+rfd = "0.17"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+tiktoken-rs = "0.7"
+toml = "0.9"
+walkdir = "2"

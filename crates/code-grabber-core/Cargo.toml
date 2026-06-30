@@ -1,0 +1,15 @@
+[package]
+name = "code-grabber-core"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+dirs.workspace = true
+globset.workspace = true
+ignore.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tiktoken-rs.workspace = true
+toml.workspace = true

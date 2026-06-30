@@ -1,0 +1,15 @@
+[package]
+name = "code-grabber-cli"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[[bin]]
+name = "cg"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+arboard.workspace = true
+code-grabber-core = { path = "../code-grabber-core" }
+clap.workspace = true
