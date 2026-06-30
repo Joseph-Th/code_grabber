@@ -116,6 +116,33 @@ fn include_rule_toggles_exclude_supported_file_groups() {
     );
 }
 
+#[test]
+fn configured_output_file_is_excluded_even_with_custom_name() {
+    let root = unique_temp_dir();
+    fs::write(root.join("src.rs"), "pub fn keep() {}\n").unwrap();
+    fs::write(root.join("llm-context.txt"), "old bundle content\n").unwrap();
+
+    let config = ScanConfigBuilder::new(&root)
+        .output_path(Some(root.join("llm-context.txt")))
+        .build()
+        .unwrap();
+    let result = generate_bundle(&config).unwrap();
+
+    assert!(result.output.contents.contains("<<<FILE path=\"src.rs\""));
+    assert!(
+        !result
+            .output
+            .contents
+            .contains("<<<FILE path=\"llm-context.txt\"")
+    );
+    assert!(
+        result
+            .output
+            .contents
+            .contains("llm-context.txt | 19 bytes | excluded: configured output file")
+    );
+}
+
 fn unique_temp_dir() -> std::path::PathBuf {
     let path = std::env::temp_dir().join(format!(
         "code-grabber-test-{}-{}",

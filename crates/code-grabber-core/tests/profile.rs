@@ -79,6 +79,21 @@ output_filename = "repo.txt"
     );
 }
 
+#[test]
+fn builder_relative_output_dir_resolves_from_repo_root() {
+    let root = unique_temp_dir("builder-relative-output");
+
+    let config = code_grabber_core::ScanConfigBuilder::new(&root)
+        .output_path(Some(std::path::PathBuf::from("bundle.txt")))
+        .build()
+        .unwrap();
+
+    assert_eq!(
+        config.output_path(),
+        root.canonicalize().unwrap().join("bundle.txt")
+    );
+}
+
 fn unique_temp_dir(label: &str) -> std::path::PathBuf {
     let path = std::env::temp_dir().join(format!(
         "code-grabber-{label}-{}-{}",

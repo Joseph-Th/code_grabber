@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 
 use crate::config::{BundleMode, ScanConfig};
 use crate::discover::FileCandidate;
@@ -36,6 +37,14 @@ pub fn classify_candidate(
     let rel = candidate.rel_path.as_str();
     let mut reasons = Vec::new();
     let language = language_for(candidate);
+
+    if is_configured_output_file(config, candidate) {
+        return Ok(excluded(
+            FileKind::Generated,
+            language,
+            "configured output file",
+        ));
+    }
 
     if candidate.hidden && !config.include_rules.hidden_files {
         return Ok(excluded(FileKind::Config, language, "hidden file"));
@@ -130,6 +139,18 @@ fn matches_exclude(config: &ScanConfig, rel: &str) -> bool {
         .exclude_globset
         .as_ref()
         .is_some_and(|globset| globset.is_match(rel))
+}
+
+fn is_configured_output_file(config: &ScanConfig, candidate: &FileCandidate) -> bool {
+    let output_path = config.output_path();
+    let Ok(rel_path) = output_path.strip_prefix(&config.root) else {
+        return false;
+    };
+    normalize_rel_path(rel_path) == candidate.rel_path
+}
+
+fn normalize_rel_path(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
 }
 
 fn glob_exclusion_kind(candidate: &FileCandidate, rel: &str) -> FileKind {

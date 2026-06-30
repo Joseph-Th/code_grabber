@@ -240,6 +240,11 @@ impl Default for ScanConfig {
 impl ScanConfig {
     pub fn finalize(mut self) -> Result<Self> {
         self.root = self.root.canonicalize()?;
+        if self.output.output_dir.is_relative() {
+            self.output.output_dir = self.root.join(&self.output.output_dir);
+        } else if self.output.output_dir.exists() {
+            self.output.output_dir = self.output.output_dir.canonicalize()?;
+        }
         self.exclude_globset = Some(build_globset(&self.exclude_rules.globs)?);
         self.test_globset = Some(build_globset(&self.exclude_rules.test_globs)?);
         Ok(self)

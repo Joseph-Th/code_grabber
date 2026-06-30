@@ -17,9 +17,6 @@ pub fn load_config(root: &Path) -> Result<ScanConfig> {
         }
     };
     config.root = root.clone();
-    if config.output.output_dir.is_relative() {
-        config.output.output_dir = root.join(&config.output.output_dir);
-    }
     config.finalize()
 }
 
